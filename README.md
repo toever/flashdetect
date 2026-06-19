@@ -12,7 +12,7 @@ pip install flashdetect-cu124
 
 ### 系统要求
 
-- Windows x64
+- Windows x64 / Linux x64，目前仅支持windows x64
 - NVIDIA GPU (Compute Capability ≥ 7.0)
 - Python ≥ 3.8
 
