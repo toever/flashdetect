@@ -3,7 +3,7 @@ from setuptools import setup
 
 # ── Build-time config ──
 # Set CUDA_VER env var to override, e.g.: $env:CUDA_VER="118"
-CUDA_VER = os.environ.get("CUDA_VER", "124")       # default: CUDA 12.4
+CUDA_VER = os.environ.get("CUDA_VER", "12")       # default: CUDA 12.x
 PLAT_NAME = os.environ.get("PLAT_NAME", "win_amd64")  # win_amd64 / manylinux2014_x86_64
 
 setup(

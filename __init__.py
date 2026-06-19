@@ -6,19 +6,37 @@ import os
 import glob
 from typing import List, Optional, Tuple
 
-# Add tensorrt_libs + CUDA runtime DLL dirs to search path if installed
-try:
-    import tensorrt_libs
-    os.add_dll_directory(tensorrt_libs.__path__[0])
-except ImportError:
-    pass
-# Scan all nvidia/* packages for DLL directories
-_nvidia_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'nvidia')
-if os.path.isdir(_nvidia_base):
-    for _root, _dirs, _files in os.walk(_nvidia_base):
-        if any(f.endswith('.dll') for f in _files):
-            os.add_dll_directory(_root)
-
+if hasattr(os, 'add_dll_directory'):
+    try:
+        import tensorrt_libs
+        os.add_dll_directory(tensorrt_libs.__path__[0])
+    except ImportError:
+        pass
+    _nvidia_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'nvidia')
+    if os.path.isdir(_nvidia_base):
+        for _root, _dirs, _files in os.walk(_nvidia_base):
+            if any(f.endswith('.dll') for f in _files):
+                os.add_dll_directory(_root)
+else:
+    _so_candidates = []
+    try:
+        import tensorrt_libs
+        _so_candidates.append(tensorrt_libs.__path__[0])
+    except ImportError:
+        pass
+    _nvidia_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'nvidia')
+    if os.path.isdir(_nvidia_base):
+        for _root, _dirs, _files in os.walk(_nvidia_base):
+            if any(f.endswith('.so') for f in _files):
+                _so_candidates.append(_root)
+    for _d in _so_candidates:
+        for _f in sorted(os.listdir(_d)):
+            if _f.endswith('.so'):
+                _fp = os.path.join(_d, _f)
+                try:
+                    ctypes.CDLL(_fp, ctypes.RTLD_GLOBAL)
+                except OSError:
+                    pass
 
 class Detection:
     """Single detection result."""
@@ -42,7 +60,6 @@ class Detection:
     def xyxy(self) -> Tuple[float, float, float, float]:
         return (self.x1, self.y1, self.x2, self.y2)
 
-
 class FlashDetect:
     """
     Low-latency YOLO26 inference engine.
@@ -56,22 +73,19 @@ class FlashDetect:
         target_classes: Optional[List[int]] = None,
         max_dets: int = 0,
         format: str = "BGR",
-        resize_mode: int = 0,       # 0=no resize (default), 1=GPU resize
+        resize_mode: int = 1,       # 1=GPU letterbox (default), 0=no resize
         src_w: int = 0,             # source width (resize_mode=1)
         src_h: int = 0,             # source height (resize_mode=1)
         sdk_dir: Optional[str] = None,
     ):
         if sdk_dir is None:
-            # Auto-detect: look for flashdetect.dll next to this file
             sdk_dir = os.path.dirname(os.path.abspath(__file__))
-            # Also try parent directory's runtime folder
-            parent_runtime = os.path.join(os.path.dirname(sdk_dir), "runtime")
-            if os.path.isdir(parent_runtime):
-                os.add_dll_directory(parent_runtime)
-            os.add_dll_directory(sdk_dir)
+            if hasattr(os, 'add_dll_directory'):
+                os.add_dll_directory(sdk_dir)
 
-        # Find DLL
-        dll_path = os.path.join(sdk_dir, "flashdetect.dll")
+        # Find library
+        lib_name = "flashdetect.dll" if os.name == 'nt' else "libflashdetect.so"
+        dll_path = os.path.join(sdk_dir, lib_name)
         if not os.path.exists(dll_path):
             raise FileNotFoundError(f"flashdetect.dll not found in {sdk_dir}")
 
@@ -138,8 +152,7 @@ class FlashDetect:
         self.resize_mode = resize_mode
         self._src_w = src_w if src_w > 0 else self.input_width
         self._src_h = src_h if src_h > 0 else self.input_height
-
-    # ── ctypes setup ──────────────────────────────
+        self._max_dets = max_dets if max_dets > 0 else 300  # 0 = use engine default (max 300)
 
     def _setup_ctypes(self):
         d = self._dll
@@ -182,16 +195,17 @@ class FlashDetect:
         d.fd_set_classes.argtypes = [ctypes.POINTER(_Ctx), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
         d.fd_set_classes.restype = None
 
-        self._Det = _Det
+        d.fd_set_src_size.argtypes = [ctypes.POINTER(_Ctx), ctypes.c_int, ctypes.c_int]
+        d.fd_set_src_size.restype = None
 
-    # ── Public API ────────────────────────────────
+        self._Det = _Det
 
     def detect(self, image_rgb, conf: float = None, classes: List[int] = None) -> List[Detection]:
         """
         Run inference on a single image.
 
         Args:
-            image_rgb: numpy array (H, W, 3) uint8 RGB.
+            image_rgb: numpy array (H, W, 3) uint8. BGR by default (format="BGR").
             conf:      Override confidence threshold for this frame (None = keep current).
             classes:   Override target classes for this frame (None = keep current).
 
@@ -213,19 +227,22 @@ class FlashDetect:
             c_cls = (ctypes.c_int * n)(*classes)
             self._dll.fd_set_classes(self._ctx, c_cls, ctypes.c_int(n))
 
-        dets = (self._Det * 300)()
+        # Auto-update source size for letterbox (resize_mode=1)
+        if self.resize_mode:
+            h, w = image_rgb.shape[:2]
+            self._dll.fd_set_src_size(self._ctx, ctypes.c_int(w), ctypes.c_int(h))
+
+        dets = (self._Det * self._max_dets)()
         count = ctypes.c_int()
         ptr = image_rgb.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-        ret = self._dll.fd_process(self._ctx, ptr, dets, 300, ctypes.byref(count))
+        ret = self._dll.fd_process(self._ctx, ptr, dets, self._max_dets, ctypes.byref(count))
         if ret != 0:
             raise RuntimeError(f"fd_process failed with code {ret}")
 
         results = []
-        sx = self._src_w / self.input_width  if self.resize_mode else 1.0
-        sy = self._src_h / self.input_height if self.resize_mode else 1.0
         for i in range(count.value):
             d = dets[i]
-            b = Detection(d.x1*sx, d.y1*sy, d.x2*sx, d.y2*sy, d.conf, d.class_id)
+            b = Detection(d.x1, d.y1, d.x2, d.y2, d.conf, d.class_id)
             results.append(b)
         return results
 
@@ -279,9 +296,11 @@ def get_machine_id(sdk_dir: str = None) -> str:
     """
     if sdk_dir is None:
         sdk_dir = os.path.dirname(os.path.abspath(__file__))
-        os.add_dll_directory(sdk_dir)
+        if hasattr(os, 'add_dll_directory'):
+            os.add_dll_directory(sdk_dir)
 
-    dll_path = os.path.join(sdk_dir, "flashdetect.dll")
+    lib_name = "flashdetect.dll" if os.name == 'nt' else "libflashdetect.so"
+    dll_path = os.path.join(sdk_dir, lib_name)
     if not os.path.exists(dll_path):
         raise FileNotFoundError(f"flashdetect.dll not found in {sdk_dir}")
 

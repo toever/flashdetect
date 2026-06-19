@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-pip install flashdetect-cu124
+pip install flashdetect-cu12
 ```
 
 ### 系统要求
@@ -16,7 +16,7 @@ pip install flashdetect-cu124
 - NVIDIA GPU (Compute Capability ≥ 7.0)
 - Python ≥ 3.8
 
-运行时依赖自动安装（CUDA 12.4 + TensorRT 11.x）。
+运行时依赖自动安装（CUDA 12.x + TensorRT 11.x）。
 
 ## 激活授权
 
@@ -29,7 +29,7 @@ import flashdetect
 print(flashdetect.get_machine_id())
 
 # 2. 收到 license.key 后，一键安装
-flashdetect.install_license("C:/Users/me/Downloads/license.key")
+flashdetect.install_license("license.key路径")
 ```
 
 激活后即可正常使用。
@@ -68,9 +68,9 @@ with FlashDetect("yolo26n.engine", conf=0.25) as detector:
 | `target_classes` | `List[int]` | `None` | 只检测指定类别（None=全部） |
 | `max_dets` | `int` | `0` | 最大检测数（0=引擎默认） |
 | `format` | `str` | `"BGR"` | 输入颜色格式：`"BGR"` 或 `"RGB"` |
-| `resize_mode` | `int` | `0` | 0=不缩放，1=GPU 缩放至引擎尺寸 |
-| `src_w` | `int` | `0` | 源图像宽度（resize_mode=1 时必填） |
-| `src_h` | `int` | `0` | 源图像高度（resize_mode=1 时必填） |
+| `resize_mode` | `int` | `1` | 1=GPU letterbox(默认), 0=不做处理 |
+| `src_w` | `int` | `0` | 初始宽度（可选, detect() 自动更新） |
+| `src_h` | `int` | `0` | 初始高度（可选, detect() 自动更新） |
 
 ### `detect(image, conf=None, classes=None) -> List[Detection]`
 
@@ -111,7 +111,7 @@ CUDA Graph 确保每次推理耗时稳定，无 CPU 端开销。
 - 工业相机检测
 - 视频流目标跟踪
 
-**不适用**：图片文件批量识别（无需 GPU Graph 优化）。
+**不适用**：图片文件 批量 识别（无需 GPU Graph 优化）。
 
 ## 许可 & 联系
 
