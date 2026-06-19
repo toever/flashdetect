@@ -1,0 +1,2 @@
+recursive-include flashdetect *.dll *.so
+include README.md
