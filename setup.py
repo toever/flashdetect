@@ -12,6 +12,7 @@ setup(
     description="Low-latency YOLO26 TensorRT inference for real-time video streams",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
+    url="https://github.com/toever/flashdetect",
     packages=["flashdetect"],
     package_data={"flashdetect": ["*.dll", "*.so"]},
     install_requires=[
@@ -25,7 +26,7 @@ setup(
         "bdist_wheel": {"plat_name": PLAT_NAME},
     },
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: Other/Proprietary License",
         "Operating System :: Microsoft :: Windows",
