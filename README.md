@@ -14,25 +14,23 @@ pip install flashdetect-cu12
 
 - Windows x64 / Linux x64
 - NVIDIA GPU (Compute Capability ≥ 7.0)
-- Python ≥ 3.8
+- Python ≥ 3.9
 
-运行时依赖自动安装（CUDA 12.x + TensorRT 11.x）。
+运行时依赖自动安装（CUDA 12.x + TensorRT 11.1）。
 
 ## 激活授权
 
-本 SDK 需要硬件绑定授权，首次使用：
+首次使用时需要 license.key 文件：
 
 ```python
 import flashdetect
 
-# 1. 获取本机 ID，发送给供应商
+# 1. 获取本机 ID
 print(flashdetect.get_machine_id())
 
-# 2. 收到 license.key 后，一键安装
+# 2. 将 license.key 放到 flashdetect 包目录下，或使用：
 flashdetect.install_license("license.key路径")
 ```
-
-激活后即可正常使用。
 
 ## 快速开始
 
@@ -101,7 +99,7 @@ detector.close()                               # 释放 GPU 资源
 
 ## 性能
 
-实测（RTX 4050 Laptop, 128×128 引擎, 256×256 BGR 输入, 1000 图 × 10 次）：
+实测（RTX 4050 Laptop, YOLO26s 128×128 引擎, 256×256 BGR 输入, 1000 图 × 10 次）：
 
 | 指标 | FlashDetect (CUDA Graph) | YOLO 官方 TRT (无 Graph) |
 |------|------------------------:|--------------------------:|
@@ -123,9 +121,7 @@ CUDA Graph 确保每次推理耗时稳定，无 CPU 端 kernel launch 开销。
 
 ## 许可 & 联系
 
-本 SDK 需硬件绑定授权，每台机器独立 `license.key`。
-无有效授权时，`FlashDetect()` 会抛出异常并显示本机 ID。
+需要 `license.key` 文件才能运行。无授权时 `FlashDetect()` 会提示本机 ID。
 
-获取授权请联系（目前还处于测试阶段，不收费）：
-
-- 📧 邮箱：`2169431623@qq.com` / `wut815318@gmail.com`
+- 📧 邮箱：`2169431623@qq.com`
+- 💬 微信：`13709056129`
