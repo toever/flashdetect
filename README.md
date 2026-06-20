@@ -18,12 +18,12 @@ pip install flashdetect-trt111-cu124
 
 Windows:
 ```bash
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu124-1.0.0-py3-none-win_amd64.whl
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.1/flashdetect_trt111_cu124-1.0.1-py3-none-win_amd64.whl
 ```
 
 Linux:
 ```bash
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu124-1.0.0-manylinux_2_28_x86_64.whl
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.1/flashdetect_trt111_cu124-1.0.1-py3-none-manylinux_2_28_x86_64.whl
 ```
 
 ### 系统要求
