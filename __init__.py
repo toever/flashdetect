@@ -8,6 +8,8 @@ import tempfile
 import shutil
 from typing import List, Optional, Tuple
 
+__version__ = "1.0.2"
+
 _GITHUB_REPO = "https://github.com/toever/flashdetect"
 _VERSION = "1.0.2"
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,7 +80,7 @@ def _extract_native(wheel_path, dst_dir):
             parts = member.split("/")
             if len(parts) > 2 and parts[1] == "libs":
                 target = os.path.join(dst_dir, "libs", name)
-            elif len(parts) == 2 and (name.endswith(".dll") or name.endswith(".so")):
+            elif len(parts) == 2 and (name.endswith(".dll") or name.endswith(".so") or name == "__init__.py"):
                 target = os.path.join(dst_dir, name)
             else:
                 continue
@@ -96,13 +98,7 @@ if sys.platform == "win32":
         os.add_dll_directory(_libs_dir)
 
 elif sys.platform in ("linux", "linux2"):
-    # RPATH $ORIGIN/libs 已嵌入 libflashdetect.so，依赖自动解析
     pass
-            try:
-                ctypes.CDLL(os.path.realpath(os.path.join(_libs_dir, _f)),
-                            ctypes.RTLD_GLOBAL)
-            except OSError:
-                pass
 
 class Detection:
     __slots__ = ("x1", "y1", "x2", "y2", "conf", "class_id")
@@ -274,3 +270,11 @@ def get_machine_id(sdk_dir=None):
     if dll.fd_get_machine_id(buf, 32) != 0:
         raise RuntimeError("Failed to get machine ID")
     return buf.value.decode()
+
+
+def install_license(path):
+    """Copy license.key to the flashdetect package directory."""
+    import shutil
+    dst = os.path.join(_PKG_DIR, "license.key")
+    shutil.copy2(path, dst)
+    print(f"[flashdetect] License installed: {dst}")
