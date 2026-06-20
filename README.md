@@ -130,7 +130,7 @@ CUDA Graph 确保每次推理耗时稳定，无 CPU 端 kernel launch 开销。
 
 ## 许可 & 联系
 
-需要 `license.key` 文件才能运行。无授权时 `FlashDetect()` 会提示本机 ID。
+联系作者获取 `license.key` 文件授权。无授权时 `FlashDetect()` 会提示本机 ID。
 
 - 📧 邮箱：`2169431623@qq.com`
 - 💬 微信：`13709056129`
