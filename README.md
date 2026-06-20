@@ -6,6 +6,16 @@
 
 ## 安装
 
+**通用安装：**
+
+```bash
+pip install flashdetect-trt111-cu124
+```
+
+首次 import 会自动从 GitHub 下载对应平台的原生库。
+
+**直接安装完整包：**
+
 Windows:
 ```bash
 pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu124-1.0.0-py3-none-win_amd64.whl
@@ -24,6 +34,8 @@ pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flash
 
 CUDA 12.4 + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
 
+> **注意**：若同时使用 PyTorch 等 GPU 库，请将 `import flashdetect` 放在最前面，避免依赖版本冲突。
+
 ## 激活授权
 
 首次使用时需要联系作者获取 license.key 文件，联系方式在最后：
@@ -34,7 +46,7 @@ import flashdetect
 # 1. 获取本机 ID
 print(flashdetect.get_machine_id())
 
-# 2. 将 license.key 放到 flashdetect 包目录下，或使用：
+# 2. 将 license.key 放到 flashdetect 包目录下，或使用自动安装：
 flashdetect.install_license("license.key路径")
 ```
 
@@ -130,7 +142,7 @@ CUDA Graph 确保每次推理耗时稳定，无 CPU 端 kernel launch 开销。
 
 ## 许可 & 联系
 
-联系作者获取 `license.key` 文件授权。无授权时 `FlashDetect()` 会提示本机 ID。
+需要 `license.key` 文件才能运行。无授权时 `FlashDetect()` 会提示本机 ID。
 
 - 📧 邮箱：`2169431623@qq.com`
 - 💬 微信：`13709056129`
