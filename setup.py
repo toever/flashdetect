@@ -4,7 +4,7 @@ from setuptools import setup
 # ── Build-time config ──
 CUDA_VER = os.environ.get("CUDA_VER", "124")
 TRT_VER= os.environ.get("TRT_VER", "111")
-# 自动检测平台
+
 if os.environ.get("PLAT_NAME"):
     PLAT_NAME = os.environ["PLAT_NAME"]
 elif sys.platform == "win32":
@@ -14,11 +14,11 @@ else:
 
 setup(
     name=f"flashdetect-trt{TRT_VER}-cu{CUDA_VER}",
-    version="1.0.0",
+    version="1.0.2",
     description="Low-latency YOLO26 TensorRT inference for real-time video streams",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    url="https://gitee.com/wt/flashdetect",
+    url="https://github.com/toever/flashdetect",
     packages=["flashdetect"],
     package_data={"flashdetect": ["*.dll", "*.so", "libs/*.dll", "libs/*.so*"]},
     install_requires=[
@@ -31,7 +31,6 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "License :: Other/Proprietary License",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX :: Linux",
         "Environment :: GPU :: NVIDIA CUDA",
