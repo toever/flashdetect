@@ -9,7 +9,7 @@ import shutil
 from typing import List, Optional, Tuple
 
 _GITHUB_REPO = "https://github.com/toever/flashdetect"
-_VERSION = "1.0.1"
+_VERSION = "1.0.2"
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _get_platform_tag():
@@ -96,23 +96,8 @@ if sys.platform == "win32":
         os.add_dll_directory(_libs_dir)
 
 elif sys.platform in ("linux", "linux2"):
-    _cuda_skip = {"libcudart", "libcublas", "libcublasLt"}
-    _has_sys_cuda = False
-    try:
-        ctypes.CDLL("libcudart.so.12")
-        _has_sys_cuda = True
-    except OSError:
-        pass
-
-    if os.path.isdir(_libs_dir):
-        _old = os.environ.get("LD_LIBRARY_PATH", "")
-        os.environ["LD_LIBRARY_PATH"] = _libs_dir + (":" + _old if _old else "")
-        for _f in sorted(os.listdir(_libs_dir)):
-            if ".so" not in _f:
-                continue
-            _base = _f.split(".so")[0]
-            if _has_sys_cuda and _base in _cuda_skip:
-                continue
+    # RPATH $ORIGIN/libs 已嵌入 libflashdetect.so，依赖自动解析
+    pass
             try:
                 ctypes.CDLL(os.path.realpath(os.path.join(_libs_dir, _f)),
                             ctypes.RTLD_GLOBAL)
@@ -173,7 +158,11 @@ class FlashDetect:
             except Exception:
                 mid = "<unavailable>"
             raise RuntimeError(
-                "fd_create failed - check license.key. Machine ID: {}".format(mid))
+                "fd_create failed. Possible causes:\n"
+                "  1. Invalid or missing license.key (Machine ID: {})\n"
+                "  2. Engine file corrupted or built with incompatible TensorRT version\n"
+                "  3. GPU driver / CUDA version mismatch\n"
+                "Check console output above for [ERR] messages.".format(mid))
         h, w = ctypes.c_int(), ctypes.c_int()
         self._dll.fd_get_size(self._ctx, ctypes.byref(h), ctypes.byref(w))
         self.input_height = h.value
