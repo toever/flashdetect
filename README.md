@@ -6,21 +6,27 @@
 
 ## 安装
 
+Windows:
 ```bash
-pip install flashdetect-cu12
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu124-1.0.0-py3-none-win_amd64.whl
+```
+
+Linux:
+```bash
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu124-1.0.0-manylinux_2_28_x86_64.whl
 ```
 
 ### 系统要求
 
 - Windows x64 / Linux x64
-- NVIDIA GPU (Compute Capability ≥ 7.0)
+- NVIDIA GPU (Compute Capability ≥ 7.5)
 - Python ≥ 3.9
 
-运行时依赖自动安装（CUDA 12.x + TensorRT 11.1）。
+CUDA 12.4 + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
 
 ## 激活授权
 
-首次使用时需要 license.key 文件：
+首次使用时需要联系作者获取 license.key 文件，联系方式在最后：
 
 ```python
 import flashdetect
