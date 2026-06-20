@@ -43,14 +43,17 @@ flashdetect.install_license("license.key路径")
 ```python
 from flashdetect import FlashDetect
 
-# 加载模型（支持 with 语句自动释放）
+# 方式一：with 语句（推荐，自动释放）
 with FlashDetect("yolo26n.engine", conf=0.25) as detector:
-    frame = camera.read()          # (H, W, 3) BGR uint8
     dets = detector.detect(frame)
-
     for d in dets:
         print(f"  cls={d.class_id} conf={d.conf:.2f} "
               f"({d.x1:.0f},{d.y1:.0f})-({d.x2:.0f},{d.y2:.0f})")
+
+# 方式二：手动管理
+detector = FlashDetect("yolo26n.engine", conf=0.25)
+dets = detector.detect(frame)
+detector.close()  # 用完释放 GPU 资源
 ```
 
 ## API 参考
