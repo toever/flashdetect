@@ -8,10 +8,10 @@ import tempfile
 import shutil
 from typing import List, Optional, Tuple
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 _GITHUB_REPO = "https://github.com/toever/flashdetect"
-_VERSION = "1.0.2"
+_VERSION = "1.0.3"
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _get_platform_tag():
@@ -117,7 +117,7 @@ class Detection:
 class FlashDetect:
     def __init__(self, engine_path, conf=0.25, device_id=0,
                  target_classes=None, max_dets=0, format="BGR",
-                 resize_mode=1, src_w=0, src_h=0, sdk_dir=None):
+                 resize_mode=1, sdk_dir=None):
         if sdk_dir is None:
             sdk_dir = _PKG_DIR
         dll_name = _get_dll_name()
@@ -146,8 +146,7 @@ class FlashDetect:
             engine_path.encode(), ctypes.c_float(conf),
             ctypes.c_int(device_id), c_labels, ctypes.c_int(n_labels),
             ctypes.c_int(max_dets), ctypes.c_int(fmt_val),
-            ctypes.c_int(resize_mode),
-            ctypes.c_int(src_w), ctypes.c_int(src_h))
+            ctypes.c_int(resize_mode))
         if not self._ctx:
             try:
                 mid = get_machine_id()
@@ -164,8 +163,8 @@ class FlashDetect:
         self.input_height = h.value
         self.input_width = w.value
         self.resize_mode = resize_mode
-        self._src_w = src_w if src_w > 0 else self.input_width
-        self._src_h = src_h if src_h > 0 else self.input_height
+        self._src_w = self.input_width
+        self._src_h = self.input_height
         self._max_dets = max_dets if max_dets > 0 else 300
 
     def _setup_ctypes(self):
@@ -180,7 +179,7 @@ class FlashDetect:
         d.fd_create.argtypes = [
             ctypes.c_char_p, ctypes.c_float, ctypes.c_int,
             ctypes.POINTER(ctypes.c_int), ctypes.c_int, ctypes.c_int,
-            ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+            ctypes.c_int, ctypes.c_int]
         d.fd_create.restype = ctypes.POINTER(_Ctx)
         d.fd_process.argtypes = [
             ctypes.POINTER(_Ctx), ctypes.POINTER(ctypes.c_uint8),
@@ -202,7 +201,7 @@ class FlashDetect:
         d.fd_set_src_size.restype = None
         self._Det = _Det
 
-    def detect(self, image_rgb, conf=None, classes=None):
+    def detect(self, image_rgb, conf=None, classes=None, max_dets=None):
         import numpy as np
         if not isinstance(image_rgb, np.ndarray):
             raise TypeError("image_rgb must be a numpy array")
@@ -218,12 +217,15 @@ class FlashDetect:
                 self._ctx, (ctypes.c_int * n)(*classes), ctypes.c_int(n))
         if self.resize_mode:
             h, w = image_rgb.shape[:2]
-            self._dll.fd_set_src_size(
-                self._ctx, ctypes.c_int(w), ctypes.c_int(h))
-        dets = (self._Det * self._max_dets)()
+            if w != self._src_w or h != self._src_h:
+                self._dll.fd_set_src_size(
+                    self._ctx, ctypes.c_int(w), ctypes.c_int(h))
+                self._src_w, self._src_h = w, h
+        n_dets = self._max_dets if max_dets is None else min(max_dets, self._max_dets)
+        dets = (self._Det * n_dets)()
         count = ctypes.c_int()
         ptr = image_rgb.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
-        if self._dll.fd_process(self._ctx, ptr, dets, self._max_dets,
+        if self._dll.fd_process(self._ctx, ptr, dets, n_dets,
                                 ctypes.byref(count)) != 0:
             raise RuntimeError("fd_process failed")
         return [Detection(d.x1, d.y1, d.x2, d.y2, d.conf, d.class_id)

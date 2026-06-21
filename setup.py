@@ -14,7 +14,7 @@ else:
 
 setup(
     name=f"flashdetect-trt{TRT_VER}-cu{CUDA_VER}",
-    version="1.0.2",
+    version="1.0.3",
     description="Low-latency YOLO26 TensorRT inference for real-time video streams",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",

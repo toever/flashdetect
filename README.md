@@ -18,12 +18,12 @@ pip install flashdetect-trt111-cu124
 
 Windows:
 ```bash
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.2/flashdetect_trt111_cu124-1.0.2-py3-none-win_amd64.whl
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-win_amd64.whl
 ```
 
 Linux:
 ```bash
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.2/flashdetect_trt111_cu124-1.0.2-py3-none-manylinux_2_28_x86_64.whl
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-manylinux_2_28_x86_64.whl
 ```
 
 ### 系统要求
@@ -105,8 +105,6 @@ detector.close()  # 用完释放 GPU 资源
 | `max_dets` | `int` | `0` | 最大检测数（0=引擎默认） |
 | `format` | `str` | `"BGR"` | 输入颜色格式：`"BGR"` 或 `"RGB"` |
 | `resize_mode` | `int` | `1` | 1=GPU letterbox(默认), 0=不做处理 |
-| `src_w` | `int` | `0` | 初始宽度（可选, detect() 自动更新） |
-| `src_h` | `int` | `0` | 初始高度（可选, detect() 自动更新） |
 
 ### `detect(image, conf=None, classes=None) -> List[Detection]`
 
