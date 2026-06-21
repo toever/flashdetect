@@ -8,13 +8,8 @@
 
 **通用安装：**
 
-根据 CUDA 版本选择对应包，TensorRT 11.1 已内置：
-
 ```bash
-# CUDA 12.1
-pip install flashdetect-trt111-cu121
-# CUDA 12.4
-pip install flashdetect-trt111-cu124
+pip install flashdetect-trt111-cu12
 ```
 
 首次 import 会自动从 GitHub 下载对应平台的原生库。
@@ -22,12 +17,10 @@ pip install flashdetect-trt111-cu124
 **直接安装完整包：**
 
 ```bash
-# CUDA 12.1
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu121-1.0.3-py3-none-win_amd64.whl
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu121-1.0.3-py3-none-manylinux_2_28_x86_64.whl
-# CUDA 12.4
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-win_amd64.whl
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-manylinux_2_28_x86_64.whl
+# Windows
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu12-1.0.0-py3-none-win_amd64.whl
+# Linux
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu12-1.0.0-py3-none-manylinux_2_28_x86_64.whl
 ```
 
 ### 系统要求
@@ -44,7 +37,7 @@ CUDA 12.x + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
 
 ### 导出引擎
 
-> 建议用 TensorRT 11.1 构建 `.engine` 文件（使用其他版本引擎可能无法加载）。NMS必须为False
+> 该版本必须用支持 CUDA12.x 的TensorRT 11.1 构建 `.engine` 文件（使用其他版本引擎可能无法加载），且NMS必须为False
 
 ## 激活授权
 

@@ -2,7 +2,7 @@ import os, sys
 from setuptools import setup
 
 # ── Build-time config ──
-CUDA_VER = os.environ.get("CUDA_VER", "124")
+CUDA_VER = os.environ.get("CUDA_VER", "12")
 TRT_VER= os.environ.get("TRT_VER", "111")
 
 if os.environ.get("PLAT_NAME"):
@@ -14,7 +14,7 @@ else:
 
 setup(
     name=f"flashdetect-trt{TRT_VER}-cu{CUDA_VER}",
-    version="1.0.3",
+    version="1.0.0",
     description="Low-latency YOLO26 TensorRT inference for real-time video streams",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
@@ -24,7 +24,7 @@ setup(
     install_requires=[
         "numpy>=1.21",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     options={
         "bdist_wheel": {"plat_name": PLAT_NAME},
     },
@@ -34,7 +34,9 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX :: Linux",
         "Environment :: GPU :: NVIDIA CUDA",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],

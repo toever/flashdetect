@@ -8,10 +8,10 @@ import tempfile
 import shutil
 from typing import List, Optional, Tuple
 
-__version__ = "1.0.3"
+__version__ = "1.0.0"
 
 _GITHUB_REPO = "https://github.com/toever/flashdetect"
-_VERSION = "1.0.3"
+_VERSION = "1.0.0"
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _get_platform_tag():
@@ -30,7 +30,7 @@ def _ensure_native():
         return
     print("[flashdetect] Native library not found, downloading from GitHub...")
     plat = _get_platform_tag()
-    wheel_name = "flashdetect_trt111_cu124-{}-py3-none-{}.whl".format(_VERSION, plat)
+    wheel_name = "flashdetect_trt111_cu12-{}-py3-none-{}.whl".format(_VERSION, plat)
     url = "{}/releases/download/v{}/{}".format(_GITHUB_REPO, _VERSION, wheel_name)
     tmpdir = tempfile.mkdtemp(prefix="flashdetect_dl_")
     try:
@@ -91,6 +91,20 @@ def _extract_native(wheel_path, dst_dir):
 _ensure_native()
 
 _libs_dir = os.path.join(_PKG_DIR, "libs")
+
+if sys.platform in ("linux", "linux2") and os.path.isdir(_libs_dir):
+    try:
+        import re
+        for f in os.listdir(_libs_dir):
+            # 匹配 lib<name>.so.<major>.<minor>.<patch> -> SONAME lib<name>.so.<major>
+            m = re.match(r'(lib.+\.so)\.(\d+)\.\d+\.\d+$', f)
+            if m:
+                soname = "{}.{}".format(m.group(1), m.group(2))
+                soname_path = os.path.join(_libs_dir, soname)
+                if not os.path.exists(soname_path):
+                    os.symlink(f, soname_path)
+    except OSError:
+        pass
 
 if sys.platform == "win32":
     os.add_dll_directory(_PKG_DIR)
@@ -201,14 +215,14 @@ class FlashDetect:
         d.fd_set_src_size.restype = None
         self._Det = _Det
 
-    def detect(self, image_rgb, conf=None, classes=None, max_dets=None):
+    def detect(self, image, conf=None, classes=None, max_dets=None):
         import numpy as np
-        if not isinstance(image_rgb, np.ndarray):
-            raise TypeError("image_rgb must be a numpy array")
-        if image_rgb.dtype != np.uint8:
-            image_rgb = image_rgb.astype(np.uint8)
-        if not image_rgb.flags["C_CONTIGUOUS"]:
-            image_rgb = np.ascontiguousarray(image_rgb)
+        if not isinstance(image, np.ndarray):
+            raise TypeError("image must be a numpy array")
+        if image.dtype != np.uint8:
+            image = image.astype(np.uint8)
+        if not image.flags["C_CONTIGUOUS"]:
+            image = np.ascontiguousarray(image)
         if conf is not None:
             self._dll.fd_set_conf(self._ctx, ctypes.c_float(conf))
         if classes is not None:
@@ -216,7 +230,7 @@ class FlashDetect:
             self._dll.fd_set_classes(
                 self._ctx, (ctypes.c_int * n)(*classes), ctypes.c_int(n))
         if self.resize_mode:
-            h, w = image_rgb.shape[:2]
+            h, w = image.shape[:2]
             if w != self._src_w or h != self._src_h:
                 self._dll.fd_set_src_size(
                     self._ctx, ctypes.c_int(w), ctypes.c_int(h))
@@ -224,7 +238,7 @@ class FlashDetect:
         n_dets = self._max_dets if max_dets is None else min(max_dets, self._max_dets)
         dets = (self._Det * n_dets)()
         count = ctypes.c_int()
-        ptr = image_rgb.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        ptr = image.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
         if self._dll.fd_process(self._ctx, ptr, dets, n_dets,
                                 ctypes.byref(count)) != 0:
             raise RuntimeError("fd_process failed")
@@ -272,7 +286,6 @@ def get_machine_id(sdk_dir=None):
     if dll.fd_get_machine_id(buf, 32) != 0:
         raise RuntimeError("Failed to get machine ID")
     return buf.value.decode()
-
 
 def install_license(path):
     """Copy license.key to the flashdetect package directory."""
