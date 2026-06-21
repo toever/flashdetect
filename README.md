@@ -8,7 +8,12 @@
 
 **通用安装：**
 
+根据 CUDA 版本选择对应包，TensorRT 11.1 已内置：
+
 ```bash
+# CUDA 12.1
+pip install flashdetect-trt111-cu121
+# CUDA 12.4
 pip install flashdetect-trt111-cu124
 ```
 
@@ -16,13 +21,12 @@ pip install flashdetect-trt111-cu124
 
 **直接安装完整包：**
 
-Windows:
 ```bash
+# CUDA 12.1
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu121-1.0.3-py3-none-win_amd64.whl
+pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu121-1.0.3-py3-none-manylinux_2_28_x86_64.whl
+# CUDA 12.4
 pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-win_amd64.whl
-```
-
-Linux:
-```bash
 pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flashdetect_trt111_cu124-1.0.3-py3-none-manylinux_2_28_x86_64.whl
 ```
 
@@ -32,26 +36,15 @@ pip install https://github.com/toever/flashdetect/releases/download/v1.0.3/flash
 - NVIDIA GPU (Compute Capability ≥ 7.5)
 - Python ≥ 3.9
 
-CUDA 12.4 + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
+CUDA 12.x + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
 
-> **注意**：需要安装 [TensorRT 11.1](https://developer.nvidia.com/tensorrt) 来构建 engine。当前FlashDetect 仅包含推理运行时，不含构建工具，后续会优化
+> **注意**：当前FlashDetect 仅包含推理运行时，请自行构建 engine，后续会增加构建模块
 
 > **注意**：若同时使用 PyTorch 等 GPU 库，请将 `import flashdetect` 放在最前面，避免 CUDA 版本冲突。
 
-## 导出引擎
+### 导出引擎
 
-FlashDetect 只需 `.engine` 文件。请用以下方式自行导出：
-
-```bash
-# 1. 下载 TensorRT 11.1
-#    https://developer.nvidia.com/tensorrt
-
-# 2. 用 ultralytics 导出 ONNX（必须 FP16 + 无 NMS）
-yolo export model="model.pt" format=onnx half=True nms=False imgsz=imgsz
-
-# 3. 用 trtexec 转 engine
-trtexec --onnx=model.onnx --saveEngine=model.engine
-```
+> 建议用 TensorRT 11.1 构建 `.engine` 文件（使用其他版本引擎可能无法加载）。NMS必须为False
 
 ## 激活授权
 
