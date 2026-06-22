@@ -6,21 +6,19 @@
 
 ## 安装
 
-**通用安装：**
-
 ```bash
-pip install flashdetect-trt111-cu12
+pip install flashdetect-trt111-cu12x
 ```
 
-首次 import 会自动从 GitHub 下载对应平台的原生库。
+首次 `import flashdetect` 会自动检测 NVIDIA 驱动版本，从 GitHub 下载最适合的原生库。
 
-**直接安装完整包：**
+> 原生库地址：https://github.com/toever/flashdetect/releases/tag/v1.0.0
 
+**手动安装：**
+
+选择对应版本下载安装
 ```bash
-# Windows
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu12-1.0.0-py3-none-win_amd64.whl
-# Linux
-pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flashdetect_trt111_cu12-1.0.0-py3-none-manylinux_2_28_x86_64.whl
+https://github.com/toever/flashdetect/releases/tag/v1.0.0 
 ```
 
 ### 系统要求
@@ -28,10 +26,9 @@ pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flash
 - Windows x64 / Linux x64
 - NVIDIA GPU (Compute Capability ≥ 7.5)
 - Python ≥ 3.9
-- **NVIDIA 驱动 ≥ 550**（CUDA 12.8 最低要求）
+- **NVIDIA 驱动 ≥ 525**
 
-> 轮子内置 CUDA 12.8 + TensorRT 11.1 运行时，无需额外安装。
-> **驱动低于 550 会导致 Segmentation fault**（如 530 仅支持到 CUDA 12.1），请升级驱动或联系作者获取 cu121 版本。
+> 轮子内置对应 CUDA 版本 + TensorRT 11.1 运行时，无需额外安装 CUDA Toolkit。
 
 > **注意**：当前FlashDetect 仅包含推理运行时，请自行构建 engine，后续会增加构建模块
 
@@ -59,18 +56,19 @@ flashdetect.install_license("license.key路径")
 
 ```python
 from flashdetect import FlashDetect
+import cv2
 
-# 方式一：with 语句（推荐，自动释放）
-with FlashDetect("yolo26n.engine") as detector:
-    dets = detector.detect(frame)
-    for d in dets:
-        print(f"  cls={int(d.class_id)} conf={d.conf:.2f} "
-              f"({d.x1:.0f},{d.y1:.0f})-({d.x2:.0f},{d.y2:.0f})")
+img = cv2.imread("bus.jpg")
+model = FlashDetect("best.engine", device_id=0, bgr2rgb=True, letterbox=True)
+result = model.detect(img)
 
-# 方式二：手动管理
-detector = FlashDetect("yolo26n.engine")
-dets = detector.detect(frame)
-detector.close()  # 用完释放 GPU 资源
+for d in result:
+    x1, y1, x2, y2 = int(d.x1), int(d.y1), int(d.x2), int(d.y2)
+    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    label = f"cls={int(d.class_id)} {d.conf:.2f}"
+    cv2.putText(img, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+cv2.imwrite("bus_result.jpg", img)
 ```
 
 ## API 参考

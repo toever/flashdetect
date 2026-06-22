@@ -14,6 +14,18 @@ _GITHUB_REPO = "https://github.com/toever/flashdetect"
 _VERSION = "1.0.0"
 _PKG_DIR = os.path.dirname(os.path.abspath(__file__))
 
+_CUDA_VERSIONS = [
+    (575, "129"),
+    (570, "128"), 
+    (565, "127"),
+    (560, "126"),
+    (555, "125"),
+    (550, "124"),
+    (545, "123"), 
+    (535, "122"),
+    (530, "121"),
+    (525, "120"),
+]
 def _get_platform_tag():
     if sys.platform == "win32":
         return "win_amd64"
@@ -23,23 +35,57 @@ def _get_platform_tag():
 def _get_dll_name():
     return "flashdetect.dll" if sys.platform == "win32" else "libflashdetect.so"
 
+def _get_driver_version():
+    import subprocess, re
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+            stderr=subprocess.DEVNULL, timeout=5
+        ).decode().strip()
+    except FileNotFoundError:
+        raise RuntimeError(
+            "nvidia-smi not found. Please install NVIDIA driver:\n"
+            "  https://www.nvidia.com/download/")
+    except Exception as e:
+        raise RuntimeError("nvidia-smi failed: {}".format(e))
+    m = re.search(r"(\d+)", out)
+    if not m:
+        raise RuntimeError("Failed to parse NVIDIA driver version from nvidia-smi")
+    return int(m.group(1))
+
+def _get_tags_to_try():
+    driver = _get_driver_version()
+    tags = [tag for min_drv, tag in _CUDA_VERSIONS if driver >= min_drv]
+    if not tags:
+        raise RuntimeError(
+            "NVIDIA driver {} is too old (minimum 525 required).\n"
+            "Please upgrade: https://www.nvidia.com/download/".format(driver))
+    print("[flashdetect] Driver {} → try CUDA tags: {}".format(driver, tags))
+    return tags
+
 def _ensure_native():
     dll = _get_dll_name()
-    dll_path = os.path.join(_PKG_DIR, dll)
-    if os.path.exists(dll_path):
+    if os.path.exists(os.path.join(_PKG_DIR, dll)):
         return
-    print("[flashdetect] Native library not found, downloading from GitHub...")
     plat = _get_platform_tag()
-    wheel_name = "flashdetect_trt111_cu12-{}-py3-none-{}.whl".format(_VERSION, plat)
-    url = "{}/releases/download/v{}/{}".format(_GITHUB_REPO, _VERSION, wheel_name)
-    tmpdir = tempfile.mkdtemp(prefix="flashdetect_dl_")
-    try:
-        wheel_path = os.path.join(tmpdir, wheel_name)
-        _download(url, wheel_path)
-        _extract_native(wheel_path, _PKG_DIR)
-        print("[flashdetect] Download complete.")
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
+    tags = _get_tags_to_try()
+    for cuda_tag in tags:
+        wheel_name = "flashdetect_trt111_cu{}-{}-py3-none-{}.whl".format(cuda_tag, _VERSION, plat)
+        url = "{}/releases/download/v{}/{}".format(_GITHUB_REPO, _VERSION, wheel_name)
+        print("[flashdetect] Trying {} ...".format(wheel_name))
+        tmpdir = tempfile.mkdtemp(prefix="flashdetect_dl_")
+        try:
+            _download(url, os.path.join(tmpdir, wheel_name))
+            _extract_native(os.path.join(tmpdir, wheel_name), _PKG_DIR)
+            print("[flashdetect] Download complete (CUDA {}).".format(cuda_tag))
+            return
+        except Exception as e:
+            print("[flashdetect] {} not available: {}".format(cuda_tag, e))
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    raise RuntimeError(
+        "No compatible CUDA wheel found on GitHub.\n"
+        "Please check: {}/releases/tag/v{}".format(_GITHUB_REPO, _VERSION))
 
 def _download(url, dst):
     try:
@@ -98,8 +144,7 @@ if sys.platform in ("linux", "linux2") and os.path.isdir(_libs_dir):
     try:
         import re
         for f in os.listdir(_libs_dir):
-            # 匹配 lib<name>.so.<major>.<minor>.<patch> -> SONAME lib<name>.so.<major>
-            m = re.match(r'(lib.+\.so)\.(\d+)\.\d+\.\d+$', f)
+            m = re.match(r'(lib.+\.so)\.(\d+)\.\d+\.\d+(?:\.\d+)?$', f)
             if m:
                 soname = "{}.{}".format(m.group(1), m.group(2))
                 soname_path = os.path.join(_libs_dir, soname)
@@ -107,6 +152,28 @@ if sys.platform in ("linux", "linux2") and os.path.isdir(_libs_dir):
                     os.symlink(f, soname_path)
     except OSError:
         pass
+
+def _verify_libs():
+    if sys.platform not in ("linux", "linux2"):
+        return
+    if not os.path.isdir(_libs_dir):
+        if os.path.exists(os.path.join(_PKG_DIR, _get_dll_name())):
+            raise RuntimeError(
+                "libs/ directory missing. Native library found but dependencies incomplete.\n"
+                "Run: pip uninstall flashdetect && pip install flashdetect")
+        return
+    required = [
+        "libnvinfer.so.11", "libnvinfer_plugin.so.11", "libnvinfer_dispatch.so.11",
+        "libcudart.so.12", "libcublas.so.12", "libcublasLt.so.12",
+    ]
+    missing = [f for f in required if not os.path.isfile(os.path.join(_libs_dir, f))]
+    if missing:
+        raise RuntimeError(
+            "Missing native libraries in {}:\n  {}\n"
+            "Re-run: pip uninstall flashdetect && pip install flashdetect".format(
+                _libs_dir, "\n  ".join(missing)))
+
+_verify_libs()
 
 if sys.platform == "win32":
     os.add_dll_directory(_PKG_DIR)
