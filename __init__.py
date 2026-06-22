@@ -60,8 +60,10 @@ def _download(url, dst):
                         mb = downloaded / (1 << 20)
                         total_mb = total / (1 << 20)
                         print("\r  Downloading... {}% ({:.1f}/{:.1f} MB)".format(pct, mb, total_mb), end="")
-                if total:
-                    print()
+                    else:
+                        mb = downloaded / (1 << 20)
+                        print("\r  Downloading... {:.1f} MB".format(mb), end="")
+                print()
     except Exception as e:
         raise RuntimeError(
             "Failed to download native library from {}\nError: {}\n"
@@ -158,16 +160,7 @@ class FlashDetect:
             ctypes.c_int(1 if bgr2rgb else 0),
             ctypes.c_int(1 if letterbox else 0))
         if not self._ctx:
-            try:
-                mid = get_machine_id()
-            except Exception:
-                mid = "<unavailable>"
-            raise RuntimeError(
-                "fd_create failed. Possible causes:\n"
-                "  1. Invalid or missing license.key (Machine ID: {})\n"
-                "  2. Engine file corrupted or built with incompatible TensorRT version\n"
-                "  3. GPU driver / CUDA version mismatch\n"
-                "Check console output above for [ERR] messages.".format(mid))
+            raise RuntimeError("fd_create failed, see stderr above for details")
         h, w, nd = ctypes.c_int(), ctypes.c_int(), ctypes.c_int()
         self._dll.fd_get_size(self._ctx, ctypes.byref(h), ctypes.byref(w), ctypes.byref(nd))
         self.input_height = h.value

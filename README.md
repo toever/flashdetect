@@ -28,8 +28,10 @@ pip install https://github.com/toever/flashdetect/releases/download/v1.0.0/flash
 - Windows x64 / Linux x64
 - NVIDIA GPU (Compute Capability ≥ 7.5)
 - Python ≥ 3.9
+- **NVIDIA 驱动 ≥ 550**（CUDA 12.8 最低要求）
 
-CUDA 12.x + TensorRT 11.1 已内置在 wheel 中，无需额外安装。
+> 轮子内置 CUDA 12.8 + TensorRT 11.1 运行时，无需额外安装。
+> **驱动低于 550 会导致 Segmentation fault**（如 530 仅支持到 CUDA 12.1），请升级驱动或联系作者获取 cu121 版本。
 
 > **注意**：当前FlashDetect 仅包含推理运行时，请自行构建 engine，后续会增加构建模块
 
@@ -59,14 +61,14 @@ flashdetect.install_license("license.key路径")
 from flashdetect import FlashDetect
 
 # 方式一：with 语句（推荐，自动释放）
-with FlashDetect("yolo26n.engine", conf=0.25) as detector:
+with FlashDetect("yolo26n.engine") as detector:
     dets = detector.detect(frame)
     for d in dets:
-        print(f"  cls={d.class_id} conf={d.conf:.2f} "
+        print(f"  cls={int(d.class_id)} conf={d.conf:.2f} "
               f"({d.x1:.0f},{d.y1:.0f})-({d.x2:.0f},{d.y2:.0f})")
 
 # 方式二：手动管理
-detector = FlashDetect("yolo26n.engine", conf=0.25)
+detector = FlashDetect("yolo26n.engine")
 dets = detector.detect(frame)
 detector.close()  # 用完释放 GPU 资源
 ```
@@ -85,12 +87,11 @@ detector.close()  # 用完释放 GPU 资源
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `engine_path` | `str` | 必填 | TensorRT .engine 文件路径 |
-| `conf` | `float` | `0.25` | 置信度阈值 |
 | `device_id` | `int` | `0` | GPU 设备编号 |
-| `target_classes` | `List[int]` | `None` | 只检测指定类别（None=全部） |
-| `max_dets` | `int` | `0` | 最大检测数（0=引擎默认） |
-| `format` | `str` | `"BGR"` | 输入颜色格式：`"BGR"` 或 `"RGB"` |
-| `resize_mode` | `int` | `1` | 1=GPU letterbox(默认), 0=不做处理 |
+| `bgr2rgb` | `bool` | `True` | 输入为 BGR（OpenCV 默认），GPU 自动转 RGB |
+| `letterbox` | `bool` | `True` | 任意尺寸输入，GPU 自动缩放填充 |
+
+> 初始置信度 0.25，检测所有类别。通过 `detect(conf=..., classes=...)` 帧间动态调整。
 
 ### `detect(image, conf=None, classes=None) -> List[Detection]`
 
@@ -104,9 +105,9 @@ detector.close()  # 用完释放 GPU 资源
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
-| `x1, y1, x2, y2` | `float` | 边界框坐标 |
+| `x1, y1, x2, y2` | `float` | 边界框坐标（原图像素） |
 | `conf` | `float` | 置信度 |
-| `class_id` | `int` | 类别 ID |
+| `class_id` | `float` | 类别 ID（强转 int 使用） |
 | `xyxy` | `tuple` | `(x1, y1, x2, y2)` 快捷属性 |
 
 ### 其他方法
